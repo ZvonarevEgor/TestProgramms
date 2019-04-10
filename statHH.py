@@ -1,6 +1,7 @@
 
 import requests
 import json
+from collections import Counter
 from bs4 import BeautifulSoup
 
 
@@ -57,7 +58,13 @@ def get_main_list(descriptions):
                 main_list.append(word)
     return main_list
 
+def sort_words(main_list):
+    words = Counter(main_list)
+    popular = words.most_common(100)
+    return popular
+
+
 vacancies_id = get_all_id(get_all_pages())
-main_list = get_main_list(get_all_descriptions(vacancies_id))
-print(len(main_list))
-print(main_list[:10])
+popular = sort_words(get_main_list(get_all_descriptions(vacancies_id)))
+print(popular)
+

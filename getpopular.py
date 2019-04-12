@@ -10,11 +10,11 @@ def get_popular(descriptions_list, stop_words):
                     words_dict[word]['counts'] += 1
                 else:
                     words_dict[word] = {'counts': 1, 'prev_words': {}, 'next_words': {}}
+                prev_words_dict = words_dict[word]['prev_words']
+                next_words_dict = words_dict[word]['next_words']
                 if this_index > 0 and this_index < max_index:
                     prev_word = words_list[this_index - 1]
                     next_word = words_list[this_index + 1]
-                    prev_words_dict = words_dict[word]['prev_words']
-                    next_words_dict = words_dict[word]['next_words']
                     if prev_word not in prev_words_dict:
                         words_dict[word]['prev_words'][prev_word] = 1
                     else:
@@ -26,14 +26,12 @@ def get_popular(descriptions_list, stop_words):
                 else:
                     if this_index == 0:
                         next_word = words_list[this_index + 1]
-                        next_words_dict = words_dict[word]['next_words']
                         if next_word not in next_words_dict.keys():
                             words_dict[word]['next_words'][next_word] = 1
                         else:
                             words_dict[word]['next_words'][next_word] += 1
                     else:
                         prev_word = words_list[this_index - 1]
-                        prev_words_dict = words_dict[word]['prev_words']
                         if prev_word not in prev_words_dict.keys():
                             words_dict[word]['prev_words'][prev_word] = 1
                         else:

@@ -2,20 +2,23 @@ import pymorphy2
 import requests
 import json
 from bs4 import BeautifulSoup
+# -*- coding: utf-8 -*-
 
 morph = pymorphy2.MorphAnalyzer()
 
 STOP_WORDS = ['программист']
 
 
+# Download job pages
 def get_all_pages():
     list_pages = []
     i = 0
 
     while True:
         url = 'https://api.hh.ru/vacancies'
-        parametres = {'text': 'python', 'area':'1','experience': 'noExperience', 'page':i}
-        r = requests.get(url, parametres)
+        parameters = {'text': 'python', 'area': '1',
+                      'experience': 'noExperience', 'page': i}
+        r = requests.get(url, parameters)
         i_list = r.json()
         list_pages.append(i_list)
         pages_count = i_list['pages']
@@ -33,6 +36,7 @@ def get_all_id(list_pages):
     return vacancies_id
 
 
+# Get a list with all the id's found
 def get_vacancy(id_):
     url_vac = 'https://api.hh.ru/vacancies/' + id_
     r = requests.get(url_vac)
@@ -41,6 +45,7 @@ def get_vacancy(id_):
     return text_wo_tg
 
 
+# Get a description of all vacancies found
 def get_all_descriptions(vacancies_id):
     descriptions_list = []
     for id_ in vacancies_id:
@@ -49,6 +54,7 @@ def get_all_descriptions(vacancies_id):
     return descriptions_list
 
 
+# Get the normal form of each word in the description
 def normal_form_list(clean_list):
     words_list = []
     for small_list in clean_list:
@@ -60,6 +66,7 @@ def normal_form_list(clean_list):
     return words_list
 
 
+# Get rid of punctuation in description
 def get_main_list(descriptions_list):
     clean_list = []
     for description in descriptions_list:
@@ -71,6 +78,9 @@ def get_main_list(descriptions_list):
         str_ = str_.replace('/', ' ')
         str_ = str_.replace('(', ' ')
         str_ = str_.replace(')', ' ')
+        str_ = str_.replace('-', ' ')
+        str_ = str_.replace('"', ' ')
+        str_ = str_.replace('●', ' ')
         list_words = str_.split(' ')
         clean_list.append([])
         this_index = len(clean_list) - 1
@@ -80,6 +90,7 @@ def get_main_list(descriptions_list):
     return clean_list
 
 
+# Create a dictionary with words and their repetitions
 def get_popular(main_list, stop_words):
     words_dict = {}
     for words_list in main_list:
@@ -121,13 +132,68 @@ def get_popular(main_list, stop_words):
     return words_dict
 
 
+# Sort the list of main words by the number of repetitions
+def sort_dict(words_dict):
+    sorted_list = []
+    for key in words_dict.keys():
+        sorted_list.append([])
+        index = len(sorted_list) - 1
+        sorted_list[index].append(key)
+        sorted_list[index].append(words_dict[key]['counts'])
+    sorted_list.sort(key=lambda element: element[1], reverse=True)
+    return sorted_list
+
+
+# Sort the list of words that occur before the main word
+def sort_prev(prev_words_dict):
+    sorted_prev = []
+    for key in prev_words_dict.keys():
+        sorted_prev.append([])
+        index = len(sorted_prev) - 1
+        sorted_prev[index].append(key)
+        sorted_prev[index].append(prev_words_dict[key])
+    sorted_prev.sort(key=lambda element: element[1], reverse=True)
+    return sorted_prev
+
+
+# Sort the list of words that occur after the main word
+def sort_next(next_words_dict):
+    sorted_next = []
+    for key in next_words_dict.keys():
+        sorted_next.append([])
+        index = len(sorted_next) - 1
+        sorted_next[index].append(key)
+        sorted_next[index].append(next_words_dict[key])
+    sorted_next.sort(key=lambda element: element[1], reverse=True)
+    return sorted_next
+
+
+# Form a message to answer
+def make_message(words, prev_words, next_words):
+    message = 'Слово: ' + words[0] + ' - ' + str(words[1]) + '\n' + \
+              'До:    ' + prev_words[0][0] + ' - ' + \
+              str(prev_words[0][1]) + '\n' + '       ' + \
+              prev_words[1][0] + ' - ' + str(prev_words[1][1]) + '\n' + \
+              'После: ' + next_words[0][0] + ' - ' + \
+              str(next_words[0][1]) + '\n' + '       ' + \
+              next_words[1][0] + ' - ' + str(next_words[1][1]) + '\n\n'
+    return message
+
+
+# Main function
 def process():
     list_pages = get_all_pages()
     descriptions_list = get_all_descriptions(get_all_id(list_pages))
-    clean_list = get_main_list(descriptions_list)
-    main_list = normal_form_list(clean_list)
+    message = 'Всего вакансий обработано: ' + str(len(descriptions_list)) + '\n\n'
+    main_list = normal_form_list(get_main_list(descriptions_list))
     words_dict = get_popular(main_list, STOP_WORDS)
-    print(json.dumps(words_dict, indent=4, ensure_ascii=False))
+    sorted_list = sort_dict(words_dict)
+    for words in sorted_list[:10]:
+        word = words[0]
+        sorted_prev = sort_prev(words_dict[word]['prev_words'])
+        sorted_next = sort_next(words_dict[word]['next_words'])
+        message += make_message(words, sorted_prev[:3], sorted_next[:3])
+    return message
 
 
-process()
+print(process())

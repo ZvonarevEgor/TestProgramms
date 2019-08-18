@@ -13,6 +13,9 @@ class TestFindMax(unittest.TestCase):
     def test_negative_arr(self):
         self.assertEqual(find_max_func.find_max([9, -5, 6, -69, 22]), 22)
 
+    def test_one_element_arr(self):
+        self.assertEqual(find_max_func.find_max([5]), 5)
+
     def test_TypeError_exception(self):
         self.assertRaises(TypeError, find_max_func.find_max, [4, 6, 2, "string", "python", "django"])
 

@@ -1,0 +1,9 @@
+- Посчитать кол-во пользователей с почтой на Gmail
+Запрос:
+SELECT COUNT(*) as count FROM users WHERE email like '%gmail%'
+
+
+- Получить всех пользователей из России
+Запрос:
+SELECT first_name, last_name, email, cities.name FROM users INNER JOIN cities ON users.city_id = cities.id
+INNER JOIN countries ON cities.country_id = countries.id WHERE countries.name = 'Russia'
